@@ -15,9 +15,12 @@
     <h1>script uploader</h1>
     <textarea id="scriptInput" placeholder="paste your script here"></textarea><br>
     <button onclick="uploadScript()">upload</button>
+    <button onclick="obfuscateScript()">obfuscate</button>
     <div id="result"></div>
 
     <script>
+        let isObfuscated = false;
+
         async function uploadScript() {
             const scriptContent = document.getElementById('scriptInput').value;
             if (!scriptContent) {
@@ -28,7 +31,7 @@
             const response = await fetch('/upload', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ script: scriptContent })
+                body: JSON.stringify({ script: scriptContent, isObfuscated })
             });
 
             const data = await response.json();
@@ -39,6 +42,25 @@
             } else {
                 alert('failed to upload script');
             }
+        }
+
+        function obfuscateScript() {
+            const scriptContent = document.getElementById('scriptInput').value;
+            if (!scriptContent) {
+                alert('please paste a script');
+                return;
+            }
+
+            const obfuscated = scriptContent
+                .split('')
+                .map(char => `%${char.charCodeAt(0).toString(16)}`)
+                .join('');
+            document.getElementById('scriptInput').value = `
+                function decodeChar(hex) return string.char(tonumber(hex, 16)) end;
+                function decodeString(str) local output, _ = string.gsub(str, "%%(%x%x)", decodeChar) return output end;
+                loadstring(decodeString("${obfuscated}"))()
+            `.trim();
+            isObfuscated = true;
         }
     </script>
 </body>
