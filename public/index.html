@@ -7,19 +7,18 @@
     <style>
         body { font-family: Arial, sans-serif; text-align: center; padding: 20px; }
         textarea { width: 90%; height: 200px; margin: 10px 0; }
-        button { padding: 10px 20px; cursor: pointer; margin: 5px; }
+        button { padding: 10px 20px; cursor: pointer; }
         a { display: block; margin-top: 20px; color: blue; text-decoration: underline; }
     </style>
 </head>
 <body>
     <h1>script uploader</h1>
     <textarea id="scriptInput" placeholder="paste your script here"></textarea><br>
-    <button onclick="uploadScript(false)">upload</button>
-    <button onclick="uploadScript(true)">obfuscate & upload</button>
+    <button onclick="uploadScript()">upload</button>
     <div id="result"></div>
 
     <script>
-        async function uploadScript(obfuscate) {
+        async function uploadScript() {
             const scriptContent = document.getElementById('scriptInput').value;
             if (!scriptContent) {
                 alert('please paste a script');
@@ -29,7 +28,7 @@
             const response = await fetch('/upload', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ script: scriptContent, obfuscate })
+                body: JSON.stringify({ script: scriptContent })
             });
 
             const data = await response.json();
@@ -37,9 +36,6 @@
                 document.getElementById('result').innerHTML = `
                     <a href="/raw/${data.id}" target="_blank">your raw script</a>
                 `;
-                if (obfuscate) {
-                    document.getElementById('scriptInput').value = decodeURIComponent(data.id); // replace textarea content with obfuscated script
-                }
             } else {
                 alert('failed to upload script');
             }
@@ -47,3 +43,4 @@
     </script>
 </body>
 </html>
+
