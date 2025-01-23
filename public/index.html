@@ -15,9 +15,30 @@
     <h1>script uploader</h1>
     <textarea id="scriptInput" placeholder="paste your script here"></textarea><br>
     <button onclick="uploadScript()">upload</button>
+    <button onclick="obfuscateScript()">Obfuscate</button>
     <div id="result"></div>
 
     <script>
+        // Function to encode script using URL encoding
+        function urlEncode(str) {
+            return str.split('').map(char => '%' + char.charCodeAt(0).toString(16).toUpperCase()).join('');
+        }
+
+        // Function to obfuscate the script
+        function obfuscateScript() {
+            const scriptContent = document.getElementById('scriptInput').value;
+            if (!scriptContent) {
+                alert('please paste a script');
+                return;
+            }
+
+            const encodedScript = urlEncode(scriptContent);
+            const obfuscatedScript = `function decodeChar(hex) return string.char(tonumber(hex, 16)) end; function decodeString(str) local output, t = string.gsub(str, "%%(%x%x)", decodeChar) return output end; loadstring(decodeString("${encodedScript}"))()`;
+
+            // Replace the content of the textarea with the obfuscated script
+            document.getElementById('scriptInput').value = obfuscatedScript;
+        }
+
         async function uploadScript() {
             const scriptContent = document.getElementById('scriptInput').value;
             if (!scriptContent) {
