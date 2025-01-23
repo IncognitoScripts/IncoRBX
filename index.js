@@ -11,19 +11,12 @@ app.use(express.static('public')); // serve the frontend
 // endpoint to upload script
 app.post('/upload', (req, res) => {
     const scriptContent = req.body.script;
+    const isObfuscated = req.body.isObfuscated || false;
+
     if (!scriptContent) return res.status(400).json({ success: false });
 
     const id = uuidv4();
-
-    // obfuscate script (percent-encoding)
-    const obfuscate = (str) => str.split('').map((char) => `%${char.charCodeAt(0).toString(16)}`).join('');
-    const obfuscatedScript = `
-        function decodeChar(hex) return string.char(tonumber(hex, 16)) end;
-        function decodeString(str) local output, _ = string.gsub(str, "%%(%x%x)", decodeChar) return output end;
-        loadstring(decodeString("${obfuscate(scriptContent)}"))()
-    `;
-
-    scripts[id] = { raw: scriptContent, obfuscated: obfuscatedScript };
+    scripts[id] = { raw: scriptContent, isObfuscated };
 
     res.json({ success: true, id });
 });
@@ -35,15 +28,6 @@ app.get('/raw/:id', (req, res) => {
 
     if (!script) return res.status(404).send('script not found');
     res.type('text/plain').send(script.raw);
-});
-
-// endpoint to serve obfuscated scripts
-app.get('/obfuscated/:id', (req, res) => {
-    const id = req.params.id;
-    const script = scripts[id];
-
-    if (!script) return res.status(404).send('script not found');
-    res.type('text/plain').send(script.obfuscated);
 });
 
 // start the server
