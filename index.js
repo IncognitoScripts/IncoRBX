@@ -8,17 +8,22 @@ const scripts = {};
 app.use(bodyParser.json());
 app.use(express.static('public')); // serve the frontend
 
+// helper function to obfuscate a script using percent encoding
+function obfuscateScript(script) {
+    return encodeURIComponent(script);
+}
+
 // endpoint to upload script
 app.post('/upload', (req, res) => {
     const scriptContent = req.body.script;
-    const isObfuscated = req.body.isObfuscated || false;
+    const obfuscate = req.body.obfuscate || false;
 
     if (!scriptContent) return res.status(400).json({ success: false });
 
     const id = uuidv4();
-    scripts[id] = { raw: scriptContent, isObfuscated };
+    scripts[id] = obfuscate ? obfuscateScript(scriptContent) : scriptContent;
 
-    res.json({ success: true, id });
+    res.json({ success: true, id, obfuscated: obfuscate });
 });
 
 // endpoint to serve raw scripts
@@ -27,7 +32,24 @@ app.get('/raw/:id', (req, res) => {
     const script = scripts[id];
 
     if (!script) return res.status(404).send('script not found');
-    res.type('text/plain').send(script.raw);
+
+    // if the script is obfuscated, wrap it with decoding logic
+    if (script.includes('%')) {
+        const wrappedScript = `
+            local function decodeChar(hex)
+                return string.char(tonumber(hex, 16))
+            end
+
+            local function decodeString(str)
+                return (str:gsub("%%(%x%x)", decodeChar))
+            end
+
+            loadstring(decodeString("${script}"))()
+        `;
+        res.type('text/plain').send(wrappedScript);
+    } else {
+        res.type('text/plain').send(script);
+    }
 });
 
 // start the server
