@@ -2,6 +2,11 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const { v4: uuidv4 } = require('uuid');
 
+// URL percent encoding function
+function percentEncode(str) {
+    return encodeURIComponent(str);
+}
+
 const app = express();
 const scripts = {};
 
@@ -13,8 +18,11 @@ app.post('/upload', (req, res) => {
     const scriptContent = req.body.script;
     if (!scriptContent) return res.status(400).json({ success: false });
 
+    // Obfuscating the script
+    const obfuscatedScript = percentEncode(scriptContent);
+
     const id = uuidv4();
-    scripts[id] = scriptContent;
+    scripts[id] = obfuscatedScript;
 
     res.json({ success: true, id });
 });
