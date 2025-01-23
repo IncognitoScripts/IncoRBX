@@ -7,21 +7,19 @@
     <style>
         body { font-family: Arial, sans-serif; text-align: center; padding: 20px; }
         textarea { width: 90%; height: 200px; margin: 10px 0; }
-        button { padding: 10px 20px; cursor: pointer; }
+        button { padding: 10px 20px; cursor: pointer; margin: 5px; }
         a { display: block; margin-top: 20px; color: blue; text-decoration: underline; }
     </style>
 </head>
 <body>
     <h1>script uploader</h1>
     <textarea id="scriptInput" placeholder="paste your script here"></textarea><br>
-    <button onclick="uploadScript()">upload</button>
-    <button onclick="obfuscateScript()">obfuscate</button>
+    <button onclick="uploadScript(false)">upload</button>
+    <button onclick="uploadScript(true)">obfuscate & upload</button>
     <div id="result"></div>
 
     <script>
-        let isObfuscated = false;
-
-        async function uploadScript() {
+        async function uploadScript(obfuscate) {
             const scriptContent = document.getElementById('scriptInput').value;
             if (!scriptContent) {
                 alert('please paste a script');
@@ -31,7 +29,7 @@
             const response = await fetch('/upload', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ script: scriptContent, isObfuscated })
+                body: JSON.stringify({ script: scriptContent, obfuscate })
             });
 
             const data = await response.json();
@@ -39,28 +37,12 @@
                 document.getElementById('result').innerHTML = `
                     <a href="/raw/${data.id}" target="_blank">your raw script</a>
                 `;
+                if (obfuscate) {
+                    document.getElementById('scriptInput').value = decodeURIComponent(data.id); // replace textarea content with obfuscated script
+                }
             } else {
                 alert('failed to upload script');
             }
-        }
-
-        function obfuscateScript() {
-            const scriptContent = document.getElementById('scriptInput').value;
-            if (!scriptContent) {
-                alert('please paste a script');
-                return;
-            }
-
-            const obfuscated = scriptContent
-                .split('')
-                .map(char => `%${char.charCodeAt(0).toString(16)}`)
-                .join('');
-            document.getElementById('scriptInput').value = `
-                function decodeChar(hex) return string.char(tonumber(hex, 16)) end;
-                function decodeString(str) local output, _ = string.gsub(str, "%%(%x%x)", decodeChar) return output end;
-                loadstring(decodeString("${obfuscated}"))()
-            `.trim();
-            isObfuscated = true;
         }
     </script>
 </body>
